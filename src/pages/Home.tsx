@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../store';
 import debounce from '../utils/debounce';
-import { setCity } from '../store/slices/weather';
+import { setCity, toggleFavoriteCity } from '../store/slices/weather';
 import { ICityLookup } from '../types/city';
 import { getCities, getCurrentWeather, getWeeklyForecast } from '../store/thunks';
 import { useEffect } from 'react';
@@ -23,11 +23,32 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { ICurrentWeather } from '../types/currentWeather';
 import { IForecast } from '../types/forecast';
 
-function ToggleFavorite({ isFavorite }: { isFavorite: boolean }) {
+function ToggleFavorite({
+  isFavorite,
+  toggleFavorite,
+}: {
+  isFavorite: boolean;
+  toggleFavorite: () => void;
+}) {
   return (
-    <Button variant="contained" startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}>
-      Toggle Favorite
+    <Button
+      variant="contained"
+      onClick={toggleFavorite}
+      sx={{ maxHeight: '40px' }}
+      color={isFavorite ? 'secondary' : 'primary'}
+      startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+    >
+      {isFavorite ? 'Remove Favorite' : 'Add to Favorites'}
     </Button>
+  );
+}
+
+function TemperatureDisplay({ unit, averageTemp }: { unit: string; averageTemp: number }) {
+  return (
+    <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center' }}>
+      {averageTemp.toFixed(0)}
+      <sup style={{ marginLeft: '2px', fontSize: '18px', marginBottom: '2px' }}>°{unit}</sup>
+    </Typography>
   );
 }
 
@@ -53,10 +74,12 @@ function CurrentWeather({
         <Box>{city?.LocalizedName}</Box>
         <Box>
           {currentWeather.WeatherText}&nbsp;
-          {currentWeather.Temperature?.[isMetricOrImperial ? 'Metric' : 'Imperial']?.Value.toFixed(
-            0
-          )}
-          °
+          <TemperatureDisplay
+            averageTemp={
+              currentWeather.Temperature?.[isMetricOrImperial ? 'Metric' : 'Imperial']?.Value
+            }
+            unit={currentWeather.Temperature?.[isMetricOrImperial ? 'Metric' : 'Imperial']?.Unit}
+          />
         </Box>
       </Box>
     </Box>
@@ -67,17 +90,18 @@ function Forecast({ forecast }: { forecast: IForecast }) {
   const isDarkMode = useAppSelector((state) => state.theme.isDarkMode);
   return (
     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-      {forecast.DailyForecasts.map((day) => {
+      {forecast.DailyForecasts.map((day, key) => {
         const averageTemp = (day.Temperature.Minimum.Value + day.Temperature.Maximum.Value) / 2;
         const weekDay = new Date(day.Date).toLocaleDateString('en-US', { weekday: 'long' });
         return (
-          <Card variant="outlined" sx={{ backgroundColor: isDarkMode ? '#476373' : 'lightblue' }}>
-            <CardContent sx={{ textAlign: 'center' }}>
+          <Card
+            key={key}
+            variant="outlined"
+            sx={{ backgroundColor: isDarkMode ? '#476373' : 'lightblue' }}
+          >
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Typography variant="h5">{weekDay}</Typography>
-              <Typography variant="h5">
-                {averageTemp.toFixed(0)}&nbsp;
-                {day.Temperature.Maximum.Unit}°
-              </Typography>
+              <TemperatureDisplay averageTemp={averageTemp} unit={day.Temperature.Maximum.Unit} />
             </CardContent>
             <CardMedia
               component="img"
@@ -100,8 +124,10 @@ function Home() {
   const currentWeather = useAppSelector((state) => state.weather.currentWeather);
   const isMetricOrImperial = useAppSelector((state) => state.weather.isMetricOrImperial);
   const fiveDayForecast = useAppSelector((state) => state.weather.fiveDayForecast);
+  const favoriteCities = useAppSelector((state) => state.weather.favoriteCities);
 
   const getDefaultCity = () => dispatch(getCities(DEFAULT_CITY_NAME));
+  const isFavoriteCity = favoriteCities.some((city) => city.Key === selectedCity?.Key);
 
   useEffect(() => {
     getDefaultCity();
@@ -115,7 +141,7 @@ function Home() {
     } else {
       dispatch(setCity(cities[0]));
     }
-  }, [selectedCity, dispatch, cities]);
+  }, [selectedCity, dispatch, cities, isMetricOrImperial]);
 
   const handleInputChange = debounce((_: unknown, cityStr: string) => {
     console.log(`handleInputChange:`, { cityStr });
@@ -135,6 +161,8 @@ function Home() {
     console.log(`The city you chose is ${value?.LocalizedName}`, value);
   };
 
+  const handleToggleFavorite = () => selectedCity && dispatch(toggleFavoriteCity(selectedCity));
+
   return (
     <Container sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <Autocomplete
@@ -147,13 +175,15 @@ function Home() {
       />
       {selectedCity && currentWeather?.[0] ? (
         <Card sx={{ padding: 2 }}>
-          <CardContent sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <CardContent
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <CurrentWeather
               city={selectedCity}
               isMetricOrImperial={isMetricOrImperial}
               currentWeather={currentWeather[0]}
             />
-            <ToggleFavorite isFavorite={false} />
+            <ToggleFavorite isFavorite={isFavoriteCity} toggleFavorite={handleToggleFavorite} />
           </CardContent>
           <Typography
             variant="h4"
@@ -169,7 +199,13 @@ function Home() {
           )}
         </Card>
       ) : (
-        <Box>City data loading...</Box>
+        <Typography
+          variant="h4"
+          sx={{ textAlign: 'center', marginBottom: 5, marginTop: 5 }}
+          color="text.secondary"
+        >
+          City data loading...
+        </Typography>
       )}
     </Container>
   );

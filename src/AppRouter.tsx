@@ -7,6 +7,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { useEffect } from 'react';
 import { useAppSelector } from './store';
+import GlobalStyle from './globalStyle';
 
 export const routeMap: Record<string, string> = {
   '/': 'Home',
@@ -30,10 +31,15 @@ const AppRouter = () => {
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
     },
+    typography: {
+      fontFamily: 'Montserrat, Arial, sans-serif',
+      // You can also define other typography properties here
+    },
   });
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
+      <GlobalStyle />
       <SetTitle />
 
       <Routes>
