@@ -36,8 +36,16 @@ export const weatherSlice = createSlice({
     setCity(state, action: PayloadAction<ICityLookup>) {
       state.selectedCity = action.payload;
     },
-    setMetricOrImperial: (state, action: PayloadAction<boolean>) => {
-      state.isMetricOrImperial = action.payload;
+    toggleFavoriteCity(state, action: PayloadAction<ICityLookup>) {
+      const city = state.favoriteCities.find((c) => c.Key === action.payload.Key);
+      if (city) {
+        state.favoriteCities = state.favoriteCities.filter((c) => c.Key !== action.payload.Key);
+      } else {
+        state.favoriteCities.push(action.payload);
+      }
+    },
+    setMetricOrImperial: (state) => {
+      state.isMetricOrImperial = !state.isMetricOrImperial;
     },
   },
   extraReducers: (builder) => {
@@ -78,4 +86,4 @@ export const weatherSlice = createSlice({
   },
 });
 
-export const { setCity, setMetricOrImperial } = weatherSlice.actions;
+export const { setCity, setMetricOrImperial, toggleFavoriteCity } = weatherSlice.actions;

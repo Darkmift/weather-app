@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import httpsService from '../http';
 import { ENV } from '../config';
 import mockHttpService from '../tests/mock/mockHttpService';
+import store from '.';
 
 if (ENV === 'development') {
   console.log('🚀 ~ file: thunks.ts:6 ~ VITE_NODE_ENV:', ENV);
@@ -14,14 +15,16 @@ const { fetchCities, fetchCurrentWeather, fetchWeeklyForecast } = httpsService;
 
 export const getCities = createAsyncThunk('weather/getCities', async (searchStr: string) => {
   const cities = await fetchCities(searchStr);
-  console.log('🚀 ~ file: thunks.ts:17 ~ getCities ~ cities:', cities);
   return cities;
 });
 
 export const getWeeklyForecast = createAsyncThunk(
   'weather/getWeeklyForecast',
   async (locationKey: string) => {
-    const forecast = await fetchWeeklyForecast(locationKey);
+    const forecast = await fetchWeeklyForecast(
+      locationKey,
+      store.getState().weather.isMetricOrImperial
+    );
     return forecast;
   }
 );

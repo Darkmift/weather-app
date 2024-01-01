@@ -3,7 +3,7 @@ import { ICurrentWeather } from '../../types/currentWeather';
 import { IForecast } from '../../types/forecast';
 import citiesMockLookup from './data/city';
 import currentWeather from './data/currentWeather';
-import forecast from './data/forecast';
+import { forecastCelsius, forecastFahrenheit } from './data/forecast';
 
 const simulateNetworkDelay = () => new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -14,13 +14,16 @@ const fetchCitiesMock = async (searchStr: string): Promise<ICityLookup[]> => {
   );
 };
 
-const fetchWeeklyForecastMock = async (locationKey: string): Promise<IForecast> => {
-  console.log(
-    '🚀 ~ file: mockHttpService.ts:14 ~ fetchWeeklyForecastMock ~ locationKey:',
-    locationKey
-  );
+const fetchWeeklyForecastMock = async (
+  locationKey: string,
+  isMetric: boolean
+): Promise<IForecast> => {
+  console.log('🚀 ~ file: mockHttpService.ts:14 ~ fetchWeeklyForecastMock ~ locationKey:', {
+    locationKey,
+    isMetric,
+  });
   await simulateNetworkDelay();
-  return forecast;
+  return isMetric ? forecastCelsius : forecastFahrenheit;
 };
 
 const fetchCurrentWeatherMock = async (locationKey: string): Promise<ICurrentWeather[]> => {

@@ -11,9 +11,9 @@ const fetchCities = async (searchStr: string): Promise<ICityLookup[]> => {
   return response.data;
 };
 
-const fetchWeeklyForecast = async (locationKey: string): Promise<IForecast> => {
+const fetchWeeklyForecast = async (locationKey: string, isMetric: boolean): Promise<IForecast> => {
   const response = await axios.get(`${BASE_URL}/forecasts/v1/daily/5day/${locationKey}`, {
-    params: { apikey: API_KEY, metric: true },
+    params: { apikey: API_KEY, metric: isMetric },
   });
   return response.data;
 };
