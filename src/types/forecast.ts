@@ -18,6 +18,8 @@ export interface Day {
   Icon: number;
   IconPhrase: string;
   HasPrecipitation: boolean;
+  PrecipitationType?: string;
+  PrecipitationIntensity?: string;
 }
 
 export interface Temperature {
