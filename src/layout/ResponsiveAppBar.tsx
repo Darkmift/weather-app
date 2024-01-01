@@ -10,6 +10,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { Link } from 'react-router-dom';
 import { routeMap } from '../AppRouter';
 import DarkModeToggle from './DarkModeToggle';
+import TempUnitSwitch from './TempUnitSwitch';
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
@@ -64,16 +65,12 @@ function ResponsiveAppBar() {
               onClose={handleCloseNavMenu}
             >
               {Object.keys(routeMap).map((page) => (
-                <MenuItem
-                  key={page}
-                  onClick={handleCloseNavMenu}
-                  component={Link}
-                  to={page}
-                >
+                <MenuItem key={page} onClick={handleCloseNavMenu} component={Link} to={page}>
                   <Typography textAlign="center"> {routeMap[page]}</Typography>
                 </MenuItem>
               ))}
               <DarkModeToggle />
+              <TempUnitSwitch />
             </Menu>
           </Box>
           {/* large screen */}
@@ -90,6 +87,7 @@ function ResponsiveAppBar() {
             ))}
 
             <DarkModeToggle />
+            <TempUnitSwitch />
           </Box>
         </Toolbar>
       </Container>
