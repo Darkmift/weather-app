@@ -13,8 +13,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import debounce from '../utils/debounce';
 import { setCity, toggleFavoriteCity } from '../store/slices/weather';
 import { ICityLookup } from '../types/city';
-import { getCities, getCurrentWeather, getWeeklyForecast } from '../store/thunks';
-import { useEffect } from 'react';
+import { SyntheticEvent, useEffect, useState } from 'react';
 import { DEFAULT_CITY_NAME } from '../config';
 import { generateIconLink } from '../utils/generateIconLink';
 // icons
@@ -22,6 +21,11 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { ICurrentWeather } from '../types/currentWeather';
 import { IForecast } from '../types/forecast';
+import {
+  useFetchCitiesQuery,
+  useFetchCurrentWeatherQuery,
+  useFetchWeeklyForecastQuery,
+} from '../http/api';
 
 function ToggleFavorite({
   isFavorite,
@@ -118,30 +122,54 @@ function Forecast({ forecast }: { forecast: IForecast }) {
 
 function Home() {
   const dispatch = useAppDispatch();
-  const cities = useAppSelector((state) => state.weather.searchResults);
-
   const selectedCity = useAppSelector((state) => state.weather.selectedCity);
-  const currentWeather = useAppSelector((state) => state.weather.currentWeather);
   const isMetricOrImperial = useAppSelector((state) => state.weather.isMetricOrImperial);
-  const fiveDayForecast = useAppSelector((state) => state.weather.fiveDayForecast);
   const favoriteCities = useAppSelector((state) => state.weather.favoriteCities);
 
-  const getDefaultCity = () => dispatch(getCities(DEFAULT_CITY_NAME));
+  const selectedCityKey = selectedCity?.Key || '';
+  const [searchText, setSearchText] = useState(selectedCity?.LocalizedName || DEFAULT_CITY_NAME);
+
+  const {
+    data: cities,
+    // isLoading: isCitiesLoading,
+    // isError: isCitiesError,
+    refetch: refetchCities,
+  } = useFetchCitiesQuery(searchText, { skip: searchText === '' });
+
+  const {
+    data: currentWeather,
+    // isLoading: isCurrentWeatherLoading,
+    // isError: isCurrentWeatherError,
+    refetch: refetchCurrentWeather,
+  } = useFetchCurrentWeatherQuery(selectedCityKey);
+
+  const {
+    data: fiveDayForecast,
+    // isLoading: isForecastLoading,
+    // isError: isForecastError,
+    refetch: refetchForecast,
+  } = useFetchWeeklyForecastQuery({
+    locationKey: selectedCityKey,
+    isMetric: isMetricOrImperial,
+  });
+
   const isFavoriteCity = favoriteCities.some((city) => city.Key === selectedCity?.Key);
 
+  // Load default city data on app load
   useEffect(() => {
-    getDefaultCity();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    refetchCities();
+  }, [refetchCities]);
 
+  // Refetch weather and forecast when city or unit changes
   useEffect(() => {
-    if (selectedCity?.Key) {
-      dispatch(getCurrentWeather(selectedCity.Key));
-      dispatch(getWeeklyForecast(selectedCity.Key));
-    } else {
-      dispatch(setCity(cities[0]));
+    if (!selectedCity && cities?.length) {
+      cities?.length && dispatch(setCity(cities?.[0]));
     }
-  }, [selectedCity, dispatch, cities, isMetricOrImperial]);
+    if (selectedCity?.Key) {
+      refetchCurrentWeather();
+      refetchForecast();
+    }
+  }, [cities, selectedCity, isMetricOrImperial, refetchCurrentWeather, refetchForecast]);
 
   const handleInputChange = debounce((_: unknown, cityStr: string) => {
     console.log(`handleInputChange:`, { cityStr });
@@ -151,17 +179,23 @@ function Home() {
       // notifyService.error('Please use only English characters');
       return;
     }
+    setSearchText(cityStr);
     if (cityStr?.length) {
-      dispatch(getCities(cityStr));
+      refetchCities();
     }
   }, 500);
 
-  const handleCitySelect = (_: React.SyntheticEvent<Element, Event>, value: ICityLookup | null) => {
-    value && dispatch(setCity(value));
-    console.log(`The city you chose is ${value?.LocalizedName}`, value);
+  const handleCitySelect = (_: SyntheticEvent<Element, Event>, value: ICityLookup | null) => {
+    if (value) {
+      dispatch(setCity(value));
+    }
   };
 
-  const handleToggleFavorite = () => selectedCity && dispatch(toggleFavoriteCity(selectedCity));
+  const handleToggleFavorite = () => {
+    if (selectedCity) {
+      dispatch(toggleFavoriteCity(selectedCity));
+    }
+  };
 
   return (
     <Container sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
