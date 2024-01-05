@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# the service worker autogen
+public/mockServiceWorker.js
