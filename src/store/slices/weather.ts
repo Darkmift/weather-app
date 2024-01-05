@@ -1,11 +1,9 @@
 // a slice to handle city data
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ICityLookup } from '../../types/city';
-import { getCities, getCurrentWeather, getWeeklyForecast } from '../thunks';
 import { IForecast } from '../../types/forecast';
 import { ICurrentWeather } from '../../types/currentWeather';
-
-const UNDEFINED_STATE_ERROR = 'undefined state fetch error';
+import { weatherApi } from '../../http/api';
 
 // define the initial state
 const initialState: {
@@ -28,9 +26,8 @@ const initialState: {
   favoriteCities: [],
 };
 
-// create the slice
-export const weatherSlice = createSlice({
-  name: 'city',
+const weatherSlice = createSlice({
+  name: 'weather',
   initialState,
   reducers: {
     setCity(state, action: PayloadAction<ICityLookup>) {
@@ -44,46 +41,50 @@ export const weatherSlice = createSlice({
         state.favoriteCities.push(action.payload);
       }
     },
-    setMetricOrImperial: (state) => {
+    setMetricOrImperial(state) {
       state.isMetricOrImperial = !state.isMetricOrImperial;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getCities.pending, (state) => {
+      .addMatcher(weatherApi.endpoints.fetchCities.matchPending, (state) => {
         state.loading = true;
       })
-      .addCase(getCities.fulfilled, (state, action) => {
+      .addMatcher(weatherApi.endpoints.fetchCities.matchFulfilled, (state, action) => {
         state.searchResults = action.payload;
         state.loading = false;
       })
-      .addCase(getCities.rejected, (state, action) => {
-        state.error = action.error.message || UNDEFINED_STATE_ERROR;
+      .addMatcher(weatherApi.endpoints.fetchCities.matchRejected, (state, action) => {
+        state.error = action.error.message;
         state.loading = false;
-      })
-      .addCase(getWeeklyForecast.pending, (state) => {
+      });
+    builder
+      .addMatcher(weatherApi.endpoints.fetchWeeklyForecast.matchPending, (state) => {
         state.loading = true;
       })
-      .addCase(getWeeklyForecast.fulfilled, (state, action) => {
+      .addMatcher(weatherApi.endpoints.fetchWeeklyForecast.matchFulfilled, (state, action) => {
         state.fiveDayForecast = action.payload;
         state.loading = false;
       })
-      .addCase(getWeeklyForecast.rejected, (state, action) => {
-        state.error = action.error.message || UNDEFINED_STATE_ERROR;
+      .addMatcher(weatherApi.endpoints.fetchWeeklyForecast.matchRejected, (state, action) => {
+        state.error = action.error.message;
         state.loading = false;
-      })
-      .addCase(getCurrentWeather.pending, (state) => {
+      });
+    builder
+      .addMatcher(weatherApi.endpoints.fetchCurrentWeather.matchPending, (state) => {
         state.loading = true;
       })
-      .addCase(getCurrentWeather.fulfilled, (state, action) => {
+      .addMatcher(weatherApi.endpoints.fetchCurrentWeather.matchFulfilled, (state, action) => {
         state.currentWeather = action.payload;
         state.loading = false;
       })
-      .addCase(getCurrentWeather.rejected, (state, action) => {
-        state.error = action.error.message || UNDEFINED_STATE_ERROR;
+      .addMatcher(weatherApi.endpoints.fetchCurrentWeather.matchRejected, (state, action) => {
+        state.error = action.error.message;
         state.loading = false;
       });
   },
 });
 
 export const { setCity, setMetricOrImperial, toggleFavoriteCity } = weatherSlice.actions;
+
+export default weatherSlice;
